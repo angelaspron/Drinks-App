@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../lib/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
-import { Plus, Wine, AlignLeft, Upload, X, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Wine, AlignLeft, Upload, X } from 'lucide-react';
 
 interface Drink {
   id: string;
