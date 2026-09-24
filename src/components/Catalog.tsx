@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { db } from '../lib/firebase';
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
 import { Plus, Wine, AlignLeft, Upload, X } from 'lucide-react';
@@ -19,6 +20,7 @@ export function Catalog() {
   const [ingredientes, setIngredientes] = useState('');
   const [modoPreparo, setModoPreparo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingFotoUrl, setEditingFotoUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,6 +65,10 @@ export function Catalog() {
     setModoPreparo('');
     setEditingId(null);
     setEditingFotoUrl(null);
+  };
+
+  const fecharModal = () => {
+    setSelectedDrink(null);
   };
 
   const handleEdit = (drink: Drink) => {
@@ -271,49 +277,115 @@ export function Catalog() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {drinks.map(drink => (
-              <div key={drink.id} className="glass-panel p-0 overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col">
-                <div className="w-full h-56 relative">
+              <div 
+                key={drink.id} 
+                className="glass-panel p-0 overflow-hidden group hover:-translate-y-2 transition-all duration-300 flex flex-col cursor-pointer"
+                onClick={() => setSelectedDrink(drink)}
+              >
+                <div className="w-full h-56 relative overflow-hidden group-image">
                   <div className="absolute inset-0 bg-gradient-to-t from-[#191c23]/90 to-transparent z-10 pointer-events-none" />
                   <img 
                     src={drink.foto_url} 
                     alt={drink.nome} 
-                    className="w-full h-full object-cover relative z-0"
+                    className="w-full h-full object-cover relative z-0 transition-transform duration-500 group-hover:scale-105"
                   />
-                  <h4 className="absolute bottom-3 left-4 z-30 text-xl font-bold text-white drop-shadow-md">
+                  <h4 className="absolute bottom-3 left-4 z-30 text-xl font-bold text-white drop-shadow-md pointer-events-none">
                     {drink.nome}
                   </h4>
                 </div>
-                <div className="p-5 flex-1 flex flex-col">
-                  <div className="space-y-3 flex-1">
-                    <div>
-                      <span className="text-xs uppercase tracking-wider text-amber-500 font-bold block mb-1">Ingredientes</span>
-                      <p className="text-sm text-gray-300 line-clamp-2">{drink.ingredientes}</p>
-                    </div>
-                    <div>
-                      <span className="text-xs uppercase tracking-wider text-amber-500 font-bold block mb-1">Preparo</span>
-                      <p className="text-sm text-gray-400 line-clamp-3">{drink.modo_preparo}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    <button 
-                      onClick={() => handleEdit(drink)} 
-                      className="btn-secondary flex-1"
-                    >
-                      Editar
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(drink.id)} 
-                      className="btn-danger flex-1"
-                    >
-                      Excluir
-                    </button>
-                  </div>
+                <div className="p-4 bg-[#191c23]/80 backdrop-blur-sm flex gap-2" onClick={(e) => e.stopPropagation()}>
+                  <button 
+                    onClick={() => handleEdit(drink)} 
+                    className="btn-secondary flex-1 text-sm py-2"
+                  >
+                    Editar
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(drink.id)} 
+                    className="btn-danger flex-1 text-sm py-2"
+                  >
+                    Excluir
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
       </section>
+
+      {/* Modal de Detalhes do Drink */}
+      {selectedDrink && document.body && createPortal(
+        <div 
+          className="fixed inset-0 z-50 bg-black/80 flex justify-center items-center p-4" 
+          onClick={fecharModal}
+          style={{ position: 'fixed', top: 0, right: 0, bottom: 0, left: 0, zIndex: 9999, backgroundColor: 'rgba(0, 0, 0, 0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem' }}
+        >
+          <div 
+            className="bg-gray-900 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl relative shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+            style={{ backgroundColor: '#111827', width: '100%', maxWidth: '42rem', maxHeight: '90vh', overflowY: 'auto', borderRadius: '0.75rem', position: 'relative', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}
+          >
+            {/* Botão de Fechar */}
+            <button 
+              onClick={fecharModal}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white text-3xl font-bold z-10 cursor-pointer"
+              style={{ background: 'transparent', border: 'none', position: 'absolute', top: '1rem', right: '1rem', zIndex: 10, cursor: 'pointer', lineHeight: 1 }}
+            >
+              &times;
+            </button>
+            
+            {/* Foto Area */}
+            <div 
+              className="w-full h-[250px] sm:h-[300px] bg-black flex justify-center items-center p-4 rounded-t-xl relative"
+              style={{ width: '100%', height: '280px', backgroundColor: '#000000', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '1rem', borderTopLeftRadius: '0.75rem', borderTopRightRadius: '0.75rem', position: 'relative', flexShrink: 0 }}
+            >
+              <img 
+                src={selectedDrink.foto_url} 
+                alt={selectedDrink.nome} 
+                className="max-w-full max-h-full object-contain drop-shadow-lg"
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+              />
+            </div>
+            
+            {/* Content Area */}
+            <div className="p-6" style={{ padding: '1.5rem' }}>
+              {/* Top Row: Title + Edit Button */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2 className="text-3xl font-bold text-white">{selectedDrink.nome}</h2>
+                <button 
+                  onClick={() => {
+                    const drinkToEdit = selectedDrink;
+                    setSelectedDrink(null);
+                    handleEdit(drinkToEdit);
+                  }}
+                  className="btn-secondary whitespace-nowrap"
+                >
+                  Editar Receita
+                </button>
+              </div>
+              
+              {/* Ingredientes Card */}
+              <div className="bg-gray-800 p-4 rounded-lg mt-4" style={{ backgroundColor: '#1f2937', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem' }}>
+                <h3 className="text-sm uppercase tracking-wider text-amber-500 font-bold mb-3 flex items-center">
+                  <Wine className="mr-2" size={18} />
+                  Ingredientes
+                </h3>
+                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed text-base">{selectedDrink.ingredientes}</p>
+              </div>
+              
+              {/* Modo de Preparo Card */}
+              <div className="bg-gray-800 p-4 rounded-lg mt-4" style={{ backgroundColor: '#1f2937', padding: '1rem', borderRadius: '0.5rem', marginTop: '1rem' }}>
+                <h3 className="text-sm uppercase tracking-wider text-amber-500 font-bold mb-3 flex items-center">
+                  <AlignLeft className="mr-2" size={18} />
+                  Modo de Preparo
+                </h3>
+                <p className="text-gray-300 whitespace-pre-wrap leading-relaxed text-base">{selectedDrink.modo_preparo}</p>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
